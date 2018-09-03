@@ -1,6 +1,7 @@
 #coding:utf-8
 
 import json
+import re
 import os
 from jinja2 import Template
 import fnmatch
@@ -14,7 +15,7 @@ class CodeGenerator(object):
         self.encoding = encoding
         self.renderOutFileName = renderOutFileName
 
-        self.config = json.load(open(configFile, 'r'))
+        self.config = self.parseJsonFile(configFile)
         self.model = self.configProcessor(self.config)
         
     def configProcessor(self, config):
@@ -27,6 +28,12 @@ class CodeGenerator(object):
         print model
         return model
 
+    def parseJsonFile(self, configFile):
+        content = self._readFile(configFile)
+
+        content = re.sub('"""((.|\n)*?)"""', lambda m: json.dumps(m.group(1)), content)   # 将"""包含的多行字符串转化为标准的json字符串
+
+        return json.loads(content)
 
     def _writeFile(self, filePath, unicodeContent):
         '''将unicode内容写入文件filePath中'''
