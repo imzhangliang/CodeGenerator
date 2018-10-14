@@ -14,9 +14,24 @@ class CodeGenerator(object):
         self.outputFile = outputFile
         self.encoding = encoding
         self.renderOutFileName = renderOutFileName
+        self.configs = []   # 配置文件集合，支持批处理
+        self.config = {}    # 配置文件。如果有多个配置文件，此为第一个配置文件
+        self.models = []    # 数据模型集合，支持批处理
+        self.model = {}     # 数据模型。如果有多个数据模型，此为第一个数据模型
 
         self.config = self.parseJsonFile(configFile)
-        self.model = self.configProcessor(self.config)
+        if type(self.config) == type([]):   # 配置json为列表
+            self.configs = self.config
+            self.config = self.configs[0]
+        else:
+            self.configs = [self.config]
+        
+        self.models = []
+        for config in self.configs:
+            self.models.append(self.configProcessor(config))
+
+        self.model = self.models[0]
+
         
     def configProcessor(self, config):
         '''将配置转化为模型的方法，子类可进行重写'''
@@ -74,7 +89,7 @@ class CodeGenerator(object):
             
 
     def start(self, fileFilter = '*'):
-        '''由模版文件生成代码到目标文件'''
+        '''由模版文件生成代码到目标文件。如果配置有多个（配置为列表），仅按第一个配置生成代码'''
         if os.path.isdir(self.tempFile) and os.path.isdir(self.outputFile):
             for parent, dirnames, filenames in os.walk(self.tempFile):     # 遍历目录下所有文件
                 for filename in filenames:
@@ -87,6 +102,14 @@ class CodeGenerator(object):
 
         elif os.path.isfile(self.tempFile) and os.path.isfile(self.outputFile):
             self._renderSingleFile(self.tempFile, self.outputFile)
+
+    def startBatch(self, fileFilter = '*'):
+        '''由模版文件生成代码到目标文件，批处理版本'''
+        for model in self.models:
+            self.model = model
+            self.start(fileFilter=fileFilter)
+        
+        self.model = self.models[0] # 将self.model还原成第一个模型
             
 
 
