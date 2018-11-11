@@ -40,7 +40,6 @@ class CodeGenerator(object):
         for prop in model.keys():
             if (type(prop) == type('') or type(prop) == type(u'')) and prop.startswith('_'):
                 del model[prop]
-        print model
         return model
 
     def parseJsonFile(self, configFile):
@@ -90,18 +89,32 @@ class CodeGenerator(object):
 
     def start(self, fileFilter = '*'):
         '''由模版文件生成代码到目标文件。如果配置有多个（配置为列表），仅按第一个配置生成代码'''
-        if os.path.isdir(self.tempFile) and os.path.isdir(self.outputFile):
+        if os.path.isdir(self.tempFile) and os.path.isdir(self.outputFile):     # 模版和目标都为目录
             for parent, dirnames, filenames in os.walk(self.tempFile):     # 遍历目录下所有文件
                 for filename in filenames:
                     if fnmatch.fnmatch(filename, fileFilter):
                         filename = os.path.join(parent, filename)
                         outFilename = filename.replace(self.tempFile, self.outputFile)
-                        assert filename != outFilename  # 源目录不能等于目标目录，否则会覆盖
+                        assert filename != outFilename  # 源目录不能等于目标目录，否则模板会被覆盖
                         print '-'*10, filename, outFilename, '-'*10
                         self._renderSingleFile(filename, outFilename)
 
-        elif os.path.isfile(self.tempFile) and os.path.isfile(self.outputFile):
-            self._renderSingleFile(self.tempFile, self.outputFile)
+        elif os.path.isfile(self.tempFile):   # 模板和目标都为文件
+            assert self.tempFile != self.outputFile  # 源文件不能等于目标文件，否则模板会被覆盖
+            if fnmatch.fnmatch(self.tempFile, fileFilter):
+                self._renderSingleFile(self.tempFile, self.outputFile)
+            else:
+                print u'%s 文件不符合规则 %s' % (self.tempFile, fileFilter)
+
+        else:
+            if not os.path.exists(self.tempFile):
+                print u'%s 不存在' % self.tempFile
+            elif os.path.isdir(self.tempFile) and not os.path.isdir(self.outputFile):
+                print u'%s是目录， 但 %s 不存在或不是目录' % (self.tempFile, self.outputFile)
+
+            
+
+            raise Exception('模版和目标必须都为目录或文件，且都存在')
 
     def startBatch(self, fileFilter = '*'):
         '''由模版文件生成代码到目标文件，批处理版本'''
