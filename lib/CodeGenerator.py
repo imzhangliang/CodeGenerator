@@ -69,11 +69,20 @@ class CodeGenerator(object):
         t = Template(s)
         return t.render(self.model)
 
+    def preProcess(self, tempContent, srcFile, dstFile):
+        '''模板文件内容的预处理'''
+        return tempContent
+    
+    def postProcess(self, outContent, srcFile, dstFile):
+        '''输出文件内容的后处理'''
+        return outContent
     
     def _renderSingleFile(self, srcFile, dstFile):
         '''把单个模版文件srcFile渲染成目标文件dstFile'''
         tempContent = self._readFile(srcFile)
+        tempContent = self.preProcess(tempContent, srcFile, dstFile)    # 内容预处理
         outContent = self.renderStr(tempContent)
+
         if self.renderOutFileName:
             outputFile = self.renderStr(dstFile)   # 将输出文件名也渲染了
         else:
@@ -84,6 +93,7 @@ class CodeGenerator(object):
         if not os.path.exists(basename):
             os.makedirs(basename)
 
+        outContent = self.postProcess(outContent, srcFile, dstFile)  # 内容后处理
         self._writeFile(outputFile, outContent)
             
 
